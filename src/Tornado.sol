@@ -24,12 +24,13 @@
 pragma solidity ^0.8.27;
 
 import {Groth16Verifier} from "./Verifier.sol";
+import {ReentrancyGuard} from "../lib/openzeppelin-contracts/contracts/utils/ReentrancyGuard.sol";
 
 interface IMiMC {
     function MiMCSponge(uint256 in_xL, uint256 in_xR) external pure returns (uint256 xL, uint256 xR);
 }
 
-contract Tornado is Groth16Verifier {
+contract Tornado is Groth16Verifier, ReentrancyGuard {
     // Errors ///////////////////////////////////////////////////////////////////////////////////////
     error Tornado__DepositAmountIsNotProperDenomination();
     error Tornado__CommitmentAlreadyHasADeposit();
@@ -72,13 +73,13 @@ contract Tornado is Groth16Verifier {
     event Withdraw(address withdrawer, bytes32 nullifierHash);
 
     // Functions ////////////////////////////////////////////////////////////////////////////////////
-    constructor(uint8 _levels, uint8 _denomination, IMiMC _mimc) {
+    constructor(uint8 _levels, uint256 _denomination, address _mimc) {
         if (_levels > 10) {
             revert Tornado__TreeLevelsExceedsTen();
         }
         levels = _levels;
         denomination = _denomination;
-        mimc = _mimc;
+        mimc = IMiMC(_mimc);
     }
 
     // External Functions ///////////////////////////////////////////////////////////////////////////
@@ -125,7 +126,7 @@ contract Tornado is Groth16Verifier {
         uint256[2] calldata _pC,
         bytes32 _root,
         bytes32 _nullifierHash
-    ) external {
+    ) external nonReentrant {
         if (!validRoot(_root)) {
             revert Tornado__NotACurrentRoot();
         }
