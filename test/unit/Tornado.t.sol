@@ -15,6 +15,10 @@ contract TornadoTest is Test {
         tornado = deployer.run();
     }
 
+    function testPlaceholder() public {
+        assert(true);
+    }
+
     // Test private functions
     // Currently the suggested method is to change the functions to internal, test them, and then change back to private
 
