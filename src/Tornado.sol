@@ -110,7 +110,7 @@ contract Tornado is Groth16Verifier, ReentrancyGuard {
                 left = lastTreePath[i];
                 right = newTreePath[i];
             }
-            newTreePath[i + 1] = hashLeftRight(mimc, left, right);
+            newTreePath[i + 1] = hashLeftRight(left, right);
         }
         lastTreePath = newTreePath;
 
@@ -151,7 +151,7 @@ contract Tornado is Groth16Verifier, ReentrancyGuard {
     /**
      * @dev Hashes 2 tree nodes
      */
-    function hashLeftRight(IMiMC _hasher, bytes32 _left, bytes32 _right) internal pure returns (bytes32) {
+    function hashLeftRight(bytes32 _left, bytes32 _right) private view returns (bytes32) {
         if (uint256(_left) > FIELD_MODULUS) {
             revert Tornado__HashElementNotInField();
         }
@@ -161,9 +161,9 @@ contract Tornado is Groth16Verifier, ReentrancyGuard {
 
         uint256 R = uint256(_left);
         uint256 C = 0;
-        (R, C) = _hasher.MiMCSponge(R, C);
+        (R, C) = mimc.MiMCSponge(R, C);
         R = addmod(R, uint256(_right), FIELD_MODULUS);
-        (R, C) = _hasher.MiMCSponge(R, C);
+        (R, C) = mimc.MiMCSponge(R, C);
         return bytes32(R);
     }
 

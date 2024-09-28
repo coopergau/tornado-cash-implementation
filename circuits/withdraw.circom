@@ -37,7 +37,7 @@ template Withdraw(levels) {
     component mimcHashers[levels];
 
     for (var i = 0; i < levels; i++) {
-        mimcHashers[i] = MiMCSponge(2, 91, 1);
+        mimcHashers[i] = MiMCSponge(2, 220, 1);
         mimcHashers[i].k <== 0;
         left[i] <== (1 - hashDirections[i]) * rootPath[i];
         mimcHashers[i].ins[0] <== left[i] + (hashDirections[i] * siblingNodes[i]);
