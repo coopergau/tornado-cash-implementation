@@ -23,14 +23,22 @@
 
 pragma solidity ^0.8.27;
 
-import {Groth16Verifier} from "./Verifier.sol";
 import {ReentrancyGuard} from "../lib/openzeppelin-contracts/contracts/utils/ReentrancyGuard.sol";
 
 interface IMiMC {
     function MiMCSponge(uint256 in_xL, uint256 in_xR) external pure returns (uint256 xL, uint256 xR);
 }
 
-contract Tornado is Groth16Verifier, ReentrancyGuard {
+interface IVerifier {
+    function verifyProof(
+        uint256[2] calldata _pA,
+        uint256[2][2] calldata _pB,
+        uint256[2] calldata _pC,
+        uint256[3] calldata _pubSignals
+    ) external view returns (bool);
+}
+
+contract Tornado is ReentrancyGuard {
     // Errors ///////////////////////////////////////////////////////////////////////////////////////
     error Tornado__DepositAmountIsNotProperDenomination();
     error Tornado__CommitmentAlreadyHasADeposit();
@@ -47,6 +55,7 @@ contract Tornado is Groth16Verifier, ReentrancyGuard {
     uint8 private immutable levels;
     uint256 private immutable denomination;
     IMiMC private immutable mimc;
+    IVerifier private immutable verifier;
     mapping(bytes32 => bool) private commitmentsUsed;
     mapping(bytes32 => bool) private nullifierHashesUsed;
     uint16 private nextDepositIndex = 0;
@@ -73,13 +82,14 @@ contract Tornado is Groth16Verifier, ReentrancyGuard {
     event Withdraw(address withdrawer, bytes32 nullifierHash);
 
     // Functions ////////////////////////////////////////////////////////////////////////////////////
-    constructor(uint8 _levels, uint256 _denomination, address _mimc) {
+    constructor(uint8 _levels, uint256 _denomination, address _mimc, address _verifier) {
         if (_levels > 10) {
             revert Tornado__TreeLevelsExceedsTen();
         }
         levels = _levels;
         denomination = _denomination;
         mimc = IMiMC(_mimc);
+        verifier = IVerifier(_verifier);
     }
 
     // External Functions ///////////////////////////////////////////////////////////////////////////
@@ -133,7 +143,9 @@ contract Tornado is Groth16Verifier, ReentrancyGuard {
         if (nullifierHashesUsed[_nullifierHash]) {
             revert Tornado__NullifierAlreadyUsed();
         }
-        if (!this.verifyProof(_pA, _pB, _pC, [uint256(_root), uint256(_nullifierHash), uint256(uint160(msg.sender))])) {
+        if (
+            verifier.verifyProof(_pA, _pB, _pC, [uint256(_root), uint256(_nullifierHash), uint256(uint160(msg.sender))])
+        ) {
             revert Tornado__InvalidWithdrawProof();
         }
 
@@ -151,7 +163,7 @@ contract Tornado is Groth16Verifier, ReentrancyGuard {
     /**
      * @dev Hashes 2 tree nodes
      */
-    function hashLeftRight(bytes32 _left, bytes32 _right) private view returns (bytes32) {
+    function hashLeftRight(bytes32 _left, bytes32 _right) public view returns (bytes32) {
         if (uint256(_left) > FIELD_MODULUS) {
             revert Tornado__HashElementNotInField();
         }
