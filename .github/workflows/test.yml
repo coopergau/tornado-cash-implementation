@@ -41,7 +41,7 @@ jobs:
 
       - name: Run Forge tests on forked ETH Mainnet
         env:
-          MAINNET_RPC_URL: ${{ secrets.ETH_RPC_URL }}
+          ETH_RPC_URL: ${{ secrets.ETH_RPC_URL }}
         run: |
           forge test --fork-url $ETH_RPC_URL -vvv
         id: test
