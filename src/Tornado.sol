@@ -24,6 +24,7 @@
 pragma solidity ^0.8.27;
 
 import {ReentrancyGuard} from "../lib/openzeppelin-contracts/contracts/utils/ReentrancyGuard.sol";
+import {console} from "forge-std/console.sol";
 
 interface IMiMC {
     function MiMCSponge(uint256 in_xL, uint256 in_xR) external pure returns (uint256 xL, uint256 xR);
@@ -107,9 +108,10 @@ contract Tornado is ReentrancyGuard {
         uint16 currentIndex = nextDepositIndex;
         bytes32 left;
         bytes32 right;
-        uint8[] memory hashDirections; // index of the last hash element in calculation of next hash element
-        bytes32[] memory newTreePath;
+        uint8[] memory hashDirections = new uint8[](levels); // index of the last hash element in calculation of next hash element
+        bytes32[] memory newTreePath = new bytes32[](levels + 1);
         newTreePath[0] = _commitment;
+
         for (uint8 i = 0; i < levels; i++) {
             if (currentIndex % 2 == 0) {
                 hashDirections[i] = 0;
@@ -125,7 +127,7 @@ contract Tornado is ReentrancyGuard {
         lastTreePath = newTreePath;
 
         commitmentsUsed[_commitment] = true;
-        lastThirtyRoots[nextDepositIndex % NUM_OF_PREV_ROOTS] = lastTreePath[levels + 1];
+        lastThirtyRoots[nextDepositIndex % NUM_OF_PREV_ROOTS] = lastTreePath[levels];
         nextDepositIndex++;
         emit Deposit(_commitment, lastTreePath, hashDirections);
     }
@@ -186,5 +188,13 @@ contract Tornado is ReentrancyGuard {
             }
         }
         return false;
+    }
+
+    function getNextDepositIndex() public view returns (uint16) {
+        return nextDepositIndex;
+    }
+
+    function getCommitmentUsed(bytes32 _commitment) public view returns (bool) {
+        return commitmentsUsed[_commitment];
     }
 }
