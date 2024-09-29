@@ -23,7 +23,7 @@ contract TornadoTest is Test {
     // Currently the suggested method is to change the functions to public, test them, and then change back to private
 
     // Test passes
-    function testCircomAndSoldityHashersAreConsistent() public view {
+    /*function testCircomAndSoldityHashersAreConsistent() public view {
         bytes32 hashOutput = tornado.hashLeftRight(
             bytes32(0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef),
             bytes32(0x2ecc7cab28d34610c27369cc8688581c7ddd283d62e1558121d2ae9fb06eff59)
@@ -32,5 +32,5 @@ contract TornadoTest is Test {
         assertEq(
             bytes32(uint256(11037690320217228127748984262847223129857008190069826932981140511052003371803)), hashOutput
         );
-    }
+    }*/
 }

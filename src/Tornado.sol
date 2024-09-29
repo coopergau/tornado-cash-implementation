@@ -163,7 +163,7 @@ contract Tornado is ReentrancyGuard {
     /**
      * @dev Hashes 2 tree nodes
      */
-    function hashLeftRight(bytes32 _left, bytes32 _right) public view returns (bytes32) {
+    function hashLeftRight(bytes32 _left, bytes32 _right) private view returns (bytes32) {
         if (uint256(_left) > FIELD_MODULUS) {
             revert Tornado__HashElementNotInField();
         }
