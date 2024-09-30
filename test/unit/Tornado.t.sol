@@ -13,6 +13,8 @@ contract TornadoTest is Test {
     address public user = address(1);
     uint256 public constant STARTING_USER_BALANCE = 10 ether;
     uint256 public constant DENOMINATION = 1 ether;
+    uint8 public constant NUM_OF_PREV_ROOTS = 30;
+    uint8 public constant LEVELS = 10;
 
     function setUp() external {
         DeployTornado deployer = new DeployTornado();
@@ -23,17 +25,60 @@ contract TornadoTest is Test {
 
     function testDepositUpdatesStateProperly() public {
         // Arrange
-        bytes32 commitment = 0x2ecc7cab28d34610c27369cc8688581c7ddd283d62e1558121d2ae9fb06eff59;
+        bytes32 commitment = 0x0de70e2c8239509d2b8be8701de9657180da637f09f4063046f5f3d90b01b5d9;
+        vm.prank(user);
 
         // Act
-        vm.prank(user);
         tornado.deposit{value: DENOMINATION}(commitment);
 
         // Assert
         uint16 newNextDepositIndex = tornado.getNextDepositIndex();
         uint16 expectedNextDepositIndex = 1;
+
+        bytes32[NUM_OF_PREV_ROOTS] memory storedRoots = tornado.getLastThirtyRoots();
+        bytes32 lastStoredRoot = storedRoots[0];
+        bytes32[] memory lastTreePath = tornado.getLastTreePath();
+        bytes32 expectedLastStoredRoot = lastTreePath[LEVELS];
+
         assertEq(expectedNextDepositIndex, newNextDepositIndex);
         assert(tornado.getCommitmentUsed(commitment));
+        assertEq(expectedLastStoredRoot, lastStoredRoot);
+    }
+
+    function testDepositRevertsIfLimitReached() public {
+        // Arrange
+        bytes32 depositIndexStorageSlot = bytes32(uint256(1));
+        uint16 maxDepositIndex = uint16(2 ** LEVELS);
+        // Set nextDepositIndex to 2 ** levels
+        vm.store(address(tornado), depositIndexStorageSlot, bytes32(uint256(maxDepositIndex)));
+
+        bytes32 commitment = 0x0de70e2c8239509d2b8be8701de9657180da637f09f4063046f5f3d90b01b5d9;
+        vm.prank(user);
+
+        // Act & Assert
+        vm.expectRevert(Tornado.Tornado__MaxDepositsReached.selector);
+        tornado.deposit{value: DENOMINATION}(commitment);
+    }
+
+    function testDepositRevertsIfCommitmentAlreadyUsed() public {
+        // Arrange
+        bytes32 commitment = 0x0de70e2c8239509d2b8be8701de9657180da637f09f4063046f5f3d90b01b5d9;
+        vm.startPrank(user);
+        tornado.deposit{value: DENOMINATION}(commitment);
+
+        // Act & Assert
+        vm.expectRevert(Tornado.Tornado__CommitmentAlreadyHasADeposit.selector);
+        tornado.deposit{value: DENOMINATION}(commitment);
+    }
+
+    function testDepositRevertsIfNotProperDenomination() public {
+        // Arrange
+        bytes32 commitment = 0x0de70e2c8239509d2b8be8701de9657180da637f09f4063046f5f3d90b01b5d9;
+        vm.prank(user);
+
+        // Act & Assert
+        vm.expectRevert(Tornado.Tornado__DepositAmountIsNotProperDenomination.selector);
+        tornado.deposit{value: DENOMINATION / 2}(commitment);
     }
 
     // Private Function Tests ///////////////////////////////////////

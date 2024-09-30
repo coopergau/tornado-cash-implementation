@@ -41,10 +41,10 @@ interface IVerifier {
 
 contract Tornado is ReentrancyGuard {
     // Errors ///////////////////////////////////////////////////////////////////////////////////////
+    error Tornado__MaxDepositsReached();
     error Tornado__DepositAmountIsNotProperDenomination();
     error Tornado__CommitmentAlreadyHasADeposit();
     error Tornado__TreeLevelsExceedsTen();
-    error Tornado__MaxDepositsReached();
     error Tornado__HashElementNotInField();
     error Tornado__NotACurrentRoot();
     error Tornado__NullifierAlreadyUsed();
@@ -52,20 +52,29 @@ contract Tornado is ReentrancyGuard {
     error Tornado__WithdrawFailed();
 
     // State Variables //////////////////////////////////////////////////////////////////////////////
+    // Constants
     uint8 internal constant NUM_OF_PREV_ROOTS = 30;
+    // Field modulus from circom lib docs
+    uint256 internal constant FIELD_MODULUS =
+        21888242871839275222246405745257275088548364400416034343698204186575808495617;
+
+    // Immutables
     uint8 internal immutable levels;
     uint256 internal immutable denomination;
     IMiMC internal immutable mimc;
     IVerifier internal immutable verifier;
+
+    // Mutables
+    uint16 internal nextDepositIndex = 0;
+    bytes32[NUM_OF_PREV_ROOTS] internal lastThirtyRoots;
+    bytes32[] internal lastTreePath;
+
+    // Mappings
     mapping(bytes32 => bool) internal commitmentsUsed;
     mapping(bytes32 => bool) internal nullifierHashesUsed;
-    uint16 internal nextDepositIndex = 0;
-    bytes32[NUM_OF_PREV_ROOTS] lastThirtyRoots;
-    bytes32[] lastTreePath;
-    // Field modulo from circom lib docs
-    uint256 internal constant FIELD_MODULUS =
-        21888242871839275222246405745257275088548364400416034343698204186575808495617;
-    bytes32[10] initialNodeValues = [
+
+    // Merkle tree initial node values by level
+    bytes32[10] internal initialNodeValues = [
         bytes32(0x0de70e2c8239509d2b8be8701de9657180da637f09f4063046f5f3d90b01b5d9),
         bytes32(0x211436a028b38dcd6f02492ea42254a7fe34a03fef3baaddb357156ad84480b1),
         bytes32(0x023e3b895367a1e60223c601d6823a42d78d199e7174c5eb3e4c29cabf7c4dd3),
@@ -190,11 +199,24 @@ contract Tornado is ReentrancyGuard {
         return false;
     }
 
+    // Getter Functions /////////////////////////////////////////////////////////
     function getNextDepositIndex() public view returns (uint16) {
         return nextDepositIndex;
     }
 
     function getCommitmentUsed(bytes32 _commitment) public view returns (bool) {
         return commitmentsUsed[_commitment];
+    }
+
+    function getNumOfPrevRoots() public pure returns (uint8) {
+        return NUM_OF_PREV_ROOTS;
+    }
+
+    function getLastThirtyRoots() public view returns (bytes32[NUM_OF_PREV_ROOTS] memory) {
+        return lastThirtyRoots;
+    }
+
+    function getLastTreePath() public view returns (bytes32[] memory) {
+        return lastTreePath;
     }
 }
