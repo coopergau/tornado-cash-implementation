@@ -12,12 +12,12 @@ contract DeployTornado is Script {
     uint256 public constant DENOMINATION = 1 ether;
     address public constant MIMC_CONTRACT_ADDRESS = 0x83584f83f26aF4eDDA9CBe8C730bc87C364b28fe; // Actual contract address that Tornado Cash uses on mainnet
 
-    function run() external returns (Tornado) {
+    function run() external returns (Tornado, Groth16Verifier) {
         vm.startBroadcast();
         Groth16Verifier verifier = new Groth16Verifier();
         Tornado tornado = new Tornado(LEVELS, DENOMINATION, MIMC_CONTRACT_ADDRESS, address(verifier));
         vm.stopBroadcast();
 
-        return (tornado);
+        return (tornado, verifier);
     }
 }

@@ -25,7 +25,7 @@ template Withdraw(levels) {
     signal concat[512];
     for (var i = 0; i < 256; i++) {
         concat[i] <== nullifier[i];
-        concat[256 + i] <== nullifier[i];
+        concat[256 + i] <== secret[i];
     }
     component commitmentHasher = Pedersen(512);
     commitmentHasher.in <== concat;

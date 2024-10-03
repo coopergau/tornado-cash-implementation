@@ -31,7 +31,7 @@ contract TornadoTest is Test {
 
     function setUp() external {
         DeployTornado deployer = new DeployTornado();
-        tornado = deployer.run();
+        (tornado,) = deployer.run();
 
         vm.deal(user, STARTING_USER_BALANCE);
     }
@@ -118,6 +118,10 @@ contract TornadoTest is Test {
         tornado.deposit{value: DENOMINATION}(DEFAULT_COMMITMENT);
     }
 
+    // Withdraw /////////////////////////////////////////////////////////
+
+    // Add more tests for when a value is deposited in the middle of the tree, not the first deposit
+
     // Private Function Tests ///////////////////////////////////////
     // Currently the suggested method is to change the functions to public, test them, and then change back to private
 
@@ -140,7 +144,7 @@ contract TornadoTest is Test {
 
     // Function used to get the defaultTreePath
     /*function testGetHashValues() public view {
-        bytes32 leftInput = 0x0de70e2c8239509d2b8be8701de9657180da637f09f4063046f5f3d90b01b5d9;
+        bytes32 leftInput = DEFAULT_COMMITMENT;
         for (uint256 i = 0; i < LEVELS; i++) {
             bytes32 hashOutput = tornado.hashLeftRight(
                 leftInput,

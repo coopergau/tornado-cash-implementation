@@ -32,10 +32,10 @@ interface IMiMC {
 
 interface IVerifier {
     function verifyProof(
-        uint256[2] calldata _pA,
-        uint256[2][2] calldata _pB,
-        uint256[2] calldata _pC,
-        uint256[3] calldata _pubSignals
+        uint256[2] memory _pA,
+        uint256[2][2] memory _pB,
+        uint256[2] memory _pC,
+        uint256[3] memory _pubSignals
     ) external view returns (bool);
 }
 
@@ -64,7 +64,7 @@ contract Tornado is ReentrancyGuard {
     IMiMC internal immutable mimc;
     IVerifier internal immutable verifier;
 
-    // Mutables
+    // Variables
     uint16 internal nextDepositIndex = 0;
     bytes32[NUM_OF_PREV_ROOTS] internal lastThirtyRoots;
     bytes32[] internal lastTreePath;
@@ -132,6 +132,7 @@ contract Tornado is ReentrancyGuard {
                 right = newTreePath[i];
             }
             newTreePath[i + 1] = hashLeftRight(left, right);
+            currentIndex /= 2;
         }
         lastTreePath = newTreePath;
 
