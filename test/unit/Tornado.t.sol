@@ -16,64 +16,20 @@ contract TornadoTest is Test {
     uint8 public constant LEVELS = 10;
     // This is the commitment produced in the valid proof using the secret and nullifier in circuits/inputs.json
     bytes32 public constant DEFAULT_COMMITMENT =
-        bytes32(
-            uint256(
-                21115196571676507868463185879415297057011113699350256184290582436409507128386
-            )
-        );
+        bytes32(uint256(21115196571676507868463185879415297057011113699350256184290582436409507128386));
     // Maybe move this into the test function if it only gets used in one
     bytes32[] public defaultTreePath = [
         DEFAULT_COMMITMENT,
-        bytes32(
-            uint256(
-                493484653166158114118544147193454987479951749075110207247550850329784053753
-            )
-        ),
-        bytes32(
-            uint256(
-                6329285957053022111621473872593962239458391357175927705368264896486795703218
-            )
-        ),
-        bytes32(
-            uint256(
-                9237187072664767464381499128964422466268010906255467325028410159482273910061
-            )
-        ),
-        bytes32(
-            uint256(
-                9677674646376489025443027910096396312270355907679568295436425862845657308031
-            )
-        ),
-        bytes32(
-            uint256(
-                1062656661606337925675597792402169590804434156582669230328016431089991199879
-            )
-        ),
-        bytes32(
-            uint256(
-                11480752392118477789250602079808354202042725946243689443884646470897224147189
-            )
-        ),
-        bytes32(
-            uint256(
-                14397727338732292485563779603761942941317699640022116873772291528216321115489
-            )
-        ),
-        bytes32(
-            uint256(
-                3928021846414916357061114320678639866468354590399219867691133329633402658032
-            )
-        ),
-        bytes32(
-            uint256(
-                596170214794883513201139523733584038081980409039346554539893814798871516871
-            )
-        ),
-        bytes32(
-            uint256(
-                20861946461624813537475155640919732833752153914675319841350016749338395248463
-            )
-        )
+        bytes32(uint256(493484653166158114118544147193454987479951749075110207247550850329784053753)),
+        bytes32(uint256(6329285957053022111621473872593962239458391357175927705368264896486795703218)),
+        bytes32(uint256(9237187072664767464381499128964422466268010906255467325028410159482273910061)),
+        bytes32(uint256(9677674646376489025443027910096396312270355907679568295436425862845657308031)),
+        bytes32(uint256(1062656661606337925675597792402169590804434156582669230328016431089991199879)),
+        bytes32(uint256(11480752392118477789250602079808354202042725946243689443884646470897224147189)),
+        bytes32(uint256(14397727338732292485563779603761942941317699640022116873772291528216321115489)),
+        bytes32(uint256(3928021846414916357061114320678639866468354590399219867691133329633402658032)),
+        bytes32(uint256(596170214794883513201139523733584038081980409039346554539893814798871516871)),
+        bytes32(uint256(20861946461624813537475155640919732833752153914675319841350016749338395248463))
     ];
     // Calling "snarkjs generatecall" in the circuits directory generates the
     // valid proof parameters, including the public inputs
@@ -96,14 +52,12 @@ contract TornadoTest is Test {
         0x2679278d6c3a5fe59d02beb59d6456881ac37420200cb7f2c5361281cdacd4da
     ];
     // Public inputs - Address comes from msg.sender
-    bytes32 public validRoot =
-        0x2e1f71794ec5b81b8d9cfca569c00e42d8ec0d3adee4e0888f6b839c4a9d874f;
-    bytes32 public validNullHash =
-        0x0d27f3b3ac9366f25360e532ea7639b549145aa13b74ee7bf7c3eb34e904c5f4;
+    bytes32 public validRoot = 0x2e1f71794ec5b81b8d9cfca569c00e42d8ec0d3adee4e0888f6b839c4a9d874f;
+    bytes32 public validNullHash = 0x0d27f3b3ac9366f25360e532ea7639b549145aa13b74ee7bf7c3eb34e904c5f4;
 
     function setUp() external {
         DeployTornado deployer = new DeployTornado();
-        (tornado, ) = deployer.run();
+        (tornado,) = deployer.run();
 
         vm.deal(user, STARTING_USER_BALANCE);
     }
@@ -122,8 +76,7 @@ contract TornadoTest is Test {
         uint16 newNextDepositIndex = tornado.getNextDepositIndex();
         uint16 expectedNextDepositIndex = 1;
 
-        bytes32[NUM_OF_PREV_ROOTS] memory storedRoots = tornado
-            .getLastThirtyRoots();
+        bytes32[NUM_OF_PREV_ROOTS] memory storedRoots = tornado.getLastThirtyRoots();
         bytes32 lastStoredRoot = storedRoots[0];
         bytes32[] memory lastTreePath = tornado.getLastTreePath();
         bytes32 expectedLastStoredRoot = lastTreePath[LEVELS];
@@ -138,11 +91,7 @@ contract TornadoTest is Test {
         bytes32 depositIndexStorageSlot = bytes32(uint256(1));
         uint16 maxDepositIndex = uint16(2 ** LEVELS);
         // Set nextDepositIndex to 2 ** levels
-        vm.store(
-            address(tornado),
-            depositIndexStorageSlot,
-            bytes32(uint256(maxDepositIndex))
-        );
+        vm.store(address(tornado), depositIndexStorageSlot, bytes32(uint256(maxDepositIndex)));
 
         // Act & Assert
         vm.prank(user);
@@ -165,9 +114,7 @@ contract TornadoTest is Test {
     function testDepositRevertsIfNotProperDenomination() public {
         // Act & Assert
         vm.prank(user);
-        vm.expectRevert(
-            Tornado.Tornado__DepositAmountIsNotProperDenomination.selector
-        );
+        vm.expectRevert(Tornado.Tornado__DepositAmountIsNotProperDenomination.selector);
         tornado.deposit{value: DENOMINATION / 2}(DEFAULT_COMMITMENT);
     }
 
@@ -193,11 +140,7 @@ contract TornadoTest is Test {
 
         // Act & Assert
         vm.expectEmit();
-        emit Tornado.Deposit(
-            DEFAULT_COMMITMENT,
-            defaultTreePath,
-            expectedhashDirections
-        );
+        emit Tornado.Deposit(DEFAULT_COMMITMENT, defaultTreePath, expectedhashDirections);
         tornado.deposit{value: DENOMINATION}(DEFAULT_COMMITMENT);
     }
 
