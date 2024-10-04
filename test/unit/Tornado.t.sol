@@ -11,6 +11,7 @@ contract TornadoTest is Test {
     Tornado public tornado;
     address public user = address(1);
     uint256 public constant STARTING_USER_BALANCE = 10 ether;
+    uint256 public constant GAS_PRICE = 1 gwei;
     uint256 public constant DENOMINATION = 1 ether;
     uint8 public constant NUM_OF_PREV_ROOTS = 30;
     uint8 public constant LEVELS = 10;
@@ -63,28 +64,6 @@ contract TornadoTest is Test {
     }
 
     // Deposit //////////////////////////////////////////////////////////
-    // Function tests that the following are updated correctly:
-    // depositIndex
-    // commitmentUsed
-    // Merkle root storage
-    function testDepositUpdatesStateProperly() public {
-        // Act
-        vm.prank(user);
-        tornado.deposit{value: DENOMINATION}(DEFAULT_COMMITMENT);
-
-        // Assert
-        uint16 newNextDepositIndex = tornado.getNextDepositIndex();
-        uint16 expectedNextDepositIndex = 1;
-
-        bytes32[NUM_OF_PREV_ROOTS] memory storedRoots = tornado.getLastThirtyRoots();
-        bytes32 lastStoredRoot = storedRoots[0];
-        bytes32[] memory lastTreePath = tornado.getLastTreePath();
-        bytes32 expectedLastStoredRoot = lastTreePath[LEVELS];
-
-        assertEq(expectedNextDepositIndex, newNextDepositIndex);
-        assert(tornado.getCommitmentUsed(DEFAULT_COMMITMENT));
-        assertEq(expectedLastStoredRoot, lastStoredRoot);
-    }
 
     function testDepositRevertsIfLimitReached() public {
         // Arrange
@@ -107,7 +86,6 @@ contract TornadoTest is Test {
         // Act & Assert
         vm.expectRevert(Tornado.Tornado__CommitmentAlreadyHasADeposit.selector);
         tornado.deposit{value: DENOMINATION}(DEFAULT_COMMITMENT);
-
         vm.stopPrank();
     }
 
@@ -116,6 +94,49 @@ contract TornadoTest is Test {
         vm.prank(user);
         vm.expectRevert(Tornado.Tornado__DepositAmountIsNotProperDenomination.selector);
         tornado.deposit{value: DENOMINATION / 2}(DEFAULT_COMMITMENT);
+    }
+
+    // Function tests that the following are updated correctly:
+    // depositIndex
+    // commitmentUsed
+    // Merkle root storage
+    function testDepositUpdatesStateCorrectly() public {
+        // Act
+        vm.prank(user);
+        tornado.deposit{value: DENOMINATION}(DEFAULT_COMMITMENT);
+
+        // Assert
+        uint16 newNextDepositIndex = tornado.getNextDepositIndex();
+        uint16 expectedNextDepositIndex = 1;
+
+        bytes32[NUM_OF_PREV_ROOTS] memory storedRoots = tornado.getLastThirtyRoots();
+        bytes32 lastStoredRoot = storedRoots[0];
+        bytes32[] memory lastTreePath = tornado.getLastTreePath();
+        bytes32 expectedLastStoredRoot = lastTreePath[LEVELS];
+
+        assertEq(expectedNextDepositIndex, newNextDepositIndex);
+        assert(tornado.getCommitmentUsed(DEFAULT_COMMITMENT));
+        assertEq(expectedLastStoredRoot, lastStoredRoot);
+    }
+
+    function testDepositUpdatesBalancesCorrectly() public {
+        // Arrange
+        uint256 initialContractBalance = address(tornado).balance;
+        uint256 initialUserBalance = user.balance;
+
+        uint256 expectedFinalContractBalance = initialContractBalance + DENOMINATION;
+        uint256 expectedFinalUserBalance = initialUserBalance - DENOMINATION;
+
+        // Act
+        vm.prank(user);
+        tornado.deposit{value: DENOMINATION}(DEFAULT_COMMITMENT);
+
+        uint256 finalContractBalance = address(tornado).balance;
+        uint256 finalUserBalance = user.balance;
+
+        // Assert
+        assertEq(expectedFinalContractBalance, finalContractBalance);
+        assertEq(expectedFinalUserBalance, finalUserBalance);
     }
 
     function testCreatesHashPathCorrectly() public {
@@ -179,6 +200,42 @@ contract TornadoTest is Test {
         vm.expectRevert(Tornado.Tornado__InvalidWithdrawProof.selector);
         tornado.withdraw(invalidA, validB, validC, validRoot, validNullHash);
         vm.stopPrank();
+    }
+
+    function testWithdrawUpdatesBalancesCorrectly() public {
+        // Arrange
+        vm.startPrank(user);
+        tornado.deposit{value: DENOMINATION}(DEFAULT_COMMITMENT);
+
+        uint256 initialContractBalance = address(tornado).balance;
+        uint256 initialUserBalance = user.balance;
+
+        uint256 expectedFinalContractBalance = initialContractBalance - DENOMINATION;
+        uint256 expectedFinalUserBalance = initialUserBalance + DENOMINATION;
+
+        // Act
+        tornado.withdraw(validA, validB, validC, validRoot, validNullHash);
+        vm.stopPrank();
+
+        uint256 finalContractBalance = address(tornado).balance;
+        uint256 finalUserBalance = user.balance;
+
+        // Assert
+        assertEq(expectedFinalContractBalance, finalContractBalance);
+        assertEq(expectedFinalUserBalance, finalUserBalance);
+    }
+
+    function testWithdrawUpdatesStateCorrectly() public {
+        // Arrange
+        vm.startPrank(user);
+        tornado.deposit{value: DENOMINATION}(DEFAULT_COMMITMENT);
+
+        // Act
+        tornado.withdraw(validA, validB, validC, validRoot, validNullHash);
+        vm.stopPrank();
+
+        // Assert
+        assert(tornado.getNullHashUsed(validNullHash));
     }
 
     // Add more tests for when a value is deposited in the middle of the tree, not the first deposit

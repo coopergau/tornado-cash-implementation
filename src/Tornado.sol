@@ -224,4 +224,8 @@ contract Tornado is ReentrancyGuard {
     function getInitNodeValue(uint256 i) public view returns (bytes32) {
         return initialNodeValues[i];
     }
+
+    function getNullHashUsed(bytes32 _nullHash) public view returns (bool) {
+        return nullifierHashesUsed[_nullHash];
+    }
 }
