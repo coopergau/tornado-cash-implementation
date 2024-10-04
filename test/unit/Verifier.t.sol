@@ -10,6 +10,9 @@ import {Groth16Verifier} from "../../src/Verifier.sol";
 contract VerifierTest is Test {
     Groth16Verifier public verifier;
 
+    uint8 public constant LEVELS = 10;
+    uint256 public constant DENOMINATION = 1 ether;
+
     // Calling "snarkjs generatecall" in the circuits directory generates the
     // valid proof parameters, including the public inputs
     uint256[2] public validA = [
@@ -37,7 +40,7 @@ contract VerifierTest is Test {
 
     function setUp() external {
         DeployTornado deployer = new DeployTornado();
-        (, verifier) = deployer.run();
+        (, verifier) = deployer.run(LEVELS, DENOMINATION);
     }
 
     // Valid Proof Test ///////////////////////////////////////////////////////

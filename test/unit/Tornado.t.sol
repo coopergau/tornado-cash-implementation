@@ -12,9 +12,9 @@ contract TornadoTest is Test {
     address public user = address(1);
     uint256 public constant STARTING_USER_BALANCE = 10 ether;
     uint256 public constant GAS_PRICE = 1 gwei;
+    uint8 public constant LEVELS = 10;
     uint256 public constant DENOMINATION = 1 ether;
     uint8 public constant NUM_OF_PREV_ROOTS = 30;
-    uint8 public constant LEVELS = 10;
     // This is the commitment produced in the valid proof using the secret and nullifier in circuits/inputs.json
     bytes32 public constant DEFAULT_COMMITMENT =
         bytes32(uint256(21115196571676507868463185879415297057011113699350256184290582436409507128386));
@@ -58,9 +58,22 @@ contract TornadoTest is Test {
 
     function setUp() external {
         DeployTornado deployer = new DeployTornado();
-        (tornado,) = deployer.run();
+        (tornado,) = deployer.run(LEVELS, DENOMINATION);
 
         vm.deal(user, STARTING_USER_BALANCE);
+    }
+
+    // Constructor //////////////////////////////////////////////////////
+
+    function testConstructorRevertsIfTooManyLevels() public {
+        // Arrange
+        uint8 tooManyLevels = 11;
+        // Named secondTornado because "tornado" is still declared in setUp() function
+        //Tornado public secondTornado;
+
+        DeployTornado deployer = new DeployTornado();
+        vm.expectRevert(Tornado.Tornado__TreeLevelsExceedsTen.selector);
+        (tornado,) = deployer.run(tooManyLevels, DENOMINATION);
     }
 
     // Deposit //////////////////////////////////////////////////////////
@@ -101,13 +114,16 @@ contract TornadoTest is Test {
     // commitmentUsed
     // Merkle root storage
     function testDepositUpdatesStateCorrectly() public {
+        // Arrange
+        uint16 initialDepositIndex = tornado.getNextDepositIndex();
+
         // Act
         vm.prank(user);
         tornado.deposit{value: DENOMINATION}(DEFAULT_COMMITMENT);
 
         // Assert
         uint16 newNextDepositIndex = tornado.getNextDepositIndex();
-        uint16 expectedNextDepositIndex = 1;
+        uint16 expectedNextDepositIndex = initialDepositIndex + 1;
 
         bytes32[NUM_OF_PREV_ROOTS] memory storedRoots = tornado.getLastThirtyRoots();
         bytes32 lastStoredRoot = storedRoots[0];
@@ -166,6 +182,7 @@ contract TornadoTest is Test {
     }
 
     // Withdraw /////////////////////////////////////////////////////////
+
     function testWithdrawRevertsIfRootIsNotCurrent() public {
         // Arrange
         bytes32 wrongRoot = bytes32(uint256(validRoot) + 1);
@@ -236,6 +253,18 @@ contract TornadoTest is Test {
 
         // Assert
         assert(tornado.getNullHashUsed(validNullHash));
+    }
+
+    function testEmitWithdrawWithCorrectArgs() public {
+        // Arrange
+        vm.startPrank((user));
+        tornado.deposit{value: DENOMINATION}(DEFAULT_COMMITMENT);
+
+        // Act & Assert
+        vm.expectEmit();
+        emit Tornado.Withdraw(address(user), validNullHash);
+        tornado.withdraw(validA, validB, validC, validRoot, validNullHash);
+        vm.stopPrank();
     }
 
     // Add more tests for when a value is deposited in the middle of the tree, not the first deposit
