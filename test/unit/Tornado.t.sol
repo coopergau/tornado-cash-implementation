@@ -257,12 +257,12 @@ contract TornadoTest is Test {
 
     function testEmitWithdrawWithCorrectArgs() public {
         // Arrange
-        vm.startPrank((user));
+        vm.startPrank(user);
         tornado.deposit{value: DENOMINATION}(DEFAULT_COMMITMENT);
 
         // Act & Assert
         vm.expectEmit();
-        emit Tornado.Withdraw(address(user), validNullHash);
+        emit Tornado.Withdraw(validNullHash);
         tornado.withdraw(validA, validB, validC, validRoot, validNullHash);
         vm.stopPrank();
     }

@@ -11,8 +11,6 @@
 
 // Layout of Functions:
 // constructor
-// receive function (if exists)
-// fallback function (if exists)
 // external
 // public
 // internal
@@ -27,10 +25,29 @@ import {ReentrancyGuard} from "../lib/openzeppelin-contracts/contracts/utils/Ree
 import {console} from "forge-std/console.sol";
 
 interface IMiMC {
+    /**
+     * @notice Computes the MiMC permutation in the Feistel mode in a sponge mode
+     * of operation.
+     * @dev Taken from Tornado Cash's MerkleTreeWithHistory.sol contract to interact with the MiMCSonge hasher contract created by the Tornado Cash team.
+     * @param in_xL The left Merkle tree node getting hashed.
+     * @param in_xR The right Merkle tree node getting hashed.
+     * @return xL The left pat of the resulting hash.
+     * @return xR The right pat of the resulting hash.
+     */
     function MiMCSponge(uint256 in_xL, uint256 in_xR) external pure returns (uint256 xL, uint256 xR);
 }
 
 interface IVerifier {
+    /**
+     * @notice Verifies a zk-SNARK proof that the prover knows a secret and a nullifier that hash to
+     * produce a commitment that is currently in the Merkle tree
+     * @dev This function comes from the Verfier.sol contract, generated using snarkjs
+     * @param _pA The first part of the zk-SNARK proof, one elliptic curve point.
+     * @param _pB The second part of the zk-SNARK proof, two elliptic curve point.
+     * @param _pC The third part of the zk-SNARK proof, one elliptic curve point.
+     * @param _pubSignals Public signals used in the proof in the form: [root, nullifierHash, address].
+     * @return bool True if the proof is valid, false otherwise.
+     */
     function verifyProof(
         uint256[2] memory _pA,
         uint256[2][2] memory _pB,
@@ -39,8 +56,22 @@ interface IVerifier {
     ) external view returns (bool);
 }
 
+/**
+ * @title Tornado Cash Implimentation
+ * @author Cooper Gau
+ * @notice This contract was created solely for educational purposes to explore and understand
+ *         certain concepts of smart contracts, cryptography, and zero knowledge proofs, through an
+ *         implimentation of the Tornado Cash protocol.
+ * @dev This implementation is not intended for actual use in production environments. Users should be
+ *      aware of the recent sanctions imposed on Tornado Cash and related entities. This contract
+ *      does not represent a functioning or compliant version of the Tornado Cash protocol. It is a
+ *      learning tool intended to display an understanding of privacy-preserving technologies in
+ *      blockchain systems.
+ */
 contract Tornado is ReentrancyGuard {
-    // Errors ///////////////////////////////////////////////////////////////////////////////////////
+    //////////////////////
+    // Errors
+    //////////////////////
     error Tornado__MaxDepositsReached();
     error Tornado__DepositAmountIsNotProperDenomination();
     error Tornado__CommitmentAlreadyHasADeposit();
@@ -51,7 +82,10 @@ contract Tornado is ReentrancyGuard {
     error Tornado__InvalidWithdrawProof();
     error Tornado__WithdrawFailed();
 
-    // State Variables //////////////////////////////////////////////////////////////////////////////
+    //////////////////////
+    // State Variables
+    //////////////////////
+
     // Constants
     uint8 internal constant NUM_OF_PREV_ROOTS = 30;
     // Field modulus from circom lib docs
@@ -73,7 +107,7 @@ contract Tornado is ReentrancyGuard {
     mapping(bytes32 => bool) internal commitmentsUsed;
     mapping(bytes32 => bool) internal nullifierHashesUsed;
 
-    // Merkle tree initial node values by level
+    // Randomly generated Merkle tree initial node values by level
     bytes32[10] internal initialNodeValues = [
         bytes32(0x0de70e2c8239509d2b8be8701de9657180da637f09f4063046f5f3d90b01b5d9),
         bytes32(0x211436a028b38dcd6f02492ea42254a7fe34a03fef3baaddb357156ad84480b1),
@@ -87,11 +121,38 @@ contract Tornado is ReentrancyGuard {
         bytes32(0x27600a82f00c73b9b35841dbbf3c91362c7127c4016ab9deef248a9da45ba6d0)
     ];
 
-    // Events ///////////////////////////////////////////////////////////////////////////////////////
+    //////////////////////
+    // Events
+    //////////////////////
+    /**
+     * @notice When a user makes a deposit, this event emits the information the user will later
+     *         need to contruct a valid withdraw proof
+     * @dev The user doesn't need to do record any of this, it's all retrieved by the frontend
+     * @param commitment The commitment that was just added to the Merkle tree
+     * @param treePath The path of Merkle tree nodes going from the commitment to the new root
+     * @param hashDirections An array indicating the positions of the previous treePath elements
+     *                       in the hashing process for the next treePath element. A value of 0
+     *                       indicates that the previous element is the left input for the hashing,
+     *                       while a value of 1 indicates it is the right input. (e.g. The
+     *                       hashDirections array for the first deposit will be all zeros)
+     */
     event Deposit(bytes32 commitment, bytes32[] treePath, uint8[] hashDirections);
-    event Withdraw(address withdrawer, bytes32 nullifierHash);
+    /**
+     * @notice When a user withdraws funds, this event emits the hash of the nullifier
+     *         that is used to prevent double spending of the same commitment.
+     * @param nullifierHash The hash of the nullifier.
+     */
+    event Withdraw(bytes32 nullifierHash);
 
-    // Functions ////////////////////////////////////////////////////////////////////////////////////
+    //////////////////////
+    // Functions
+    //////////////////////
+    /**
+     * @param _levels The levels of the Merkle tree, not including the root.
+     * @param _denomination The amount of ether that users can deposit or withdraw per transaction
+     * @param _mimc The address of the MiMC contract
+     * @param _verifier The address of the verifier contract
+     */
     constructor(uint8 _levels, uint256 _denomination, address _mimc, address _verifier) {
         if (_levels > 10) {
             revert Tornado__TreeLevelsExceedsTen();
@@ -102,7 +163,9 @@ contract Tornado is ReentrancyGuard {
         verifier = IVerifier(_verifier);
     }
 
-    // External Functions ///////////////////////////////////////////////////////////////////////////
+    //////////////////////
+    // External Functions
+    //////////////////////
     function deposit(bytes32 _commitment) external payable {
         if (nextDepositIndex >= 2 ** levels) {
             revert Tornado__MaxDepositsReached();
@@ -168,10 +231,12 @@ contract Tornado is ReentrancyGuard {
             revert Tornado__WithdrawFailed();
         }
 
-        emit Withdraw(msg.sender, _nullifierHash);
+        emit Withdraw(_nullifierHash);
     }
 
-    // View & Pure Functions //////////////////////////////////////////////////////
+    /////////////////////////
+    // View & Pure Functions
+    /////////////////////////
     /**
      * @dev Hashes 2 tree nodes
      */
@@ -200,7 +265,6 @@ contract Tornado is ReentrancyGuard {
         return false;
     }
 
-    // Getter Functions /////////////////////////////////////////////////////////
     function getNextDepositIndex() public view returns (uint16) {
         return nextDepositIndex;
     }
