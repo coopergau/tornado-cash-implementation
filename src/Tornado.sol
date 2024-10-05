@@ -43,7 +43,7 @@ interface IVerifier {
      * produce a commitment that is currently in the Merkle tree
      * @dev This function comes from the Verfier.sol contract, generated using snarkjs
      * @param _pA The first part of the zk-SNARK proof, one elliptic curve point.
-     * @param _pB The second part of the zk-SNARK proof, two elliptic curve point.
+     * @param _pB The second part of the zk-SNARK proof, two elliptic curve points.
      * @param _pC The third part of the zk-SNARK proof, one elliptic curve point.
      * @param _pubSignals Public signals used in the proof in the form: [root, nullifierHash, address].
      * @return bool True if the proof is valid, false otherwise.
@@ -128,7 +128,7 @@ contract Tornado is ReentrancyGuard {
      * @notice When a user makes a deposit, this event emits the information the user will later
      *         need to contruct a valid withdraw proof
      * @dev The user doesn't need to do record any of this, it's all retrieved by the frontend
-     * @param commitment The commitment that was just added to the Merkle tree
+     * @param commitment The Pederson commitment that was just added to the Merkle tree
      * @param treePath The path of Merkle tree nodes going from the commitment to the new root
      * @param hashDirections An array indicating the positions of the previous treePath elements
      *                       in the hashing process for the next treePath element. A value of 0
@@ -149,9 +149,9 @@ contract Tornado is ReentrancyGuard {
     //////////////////////
     /**
      * @param _levels The levels of the Merkle tree, not including the root.
-     * @param _denomination The amount of ether that users can deposit or withdraw per transaction
-     * @param _mimc The address of the MiMC contract
-     * @param _verifier The address of the verifier contract
+     * @param _denomination The amount of ether that users can deposit or withdraw per transaction.
+     * @param _mimc The address of the MiMC contract.
+     * @param _verifier The address of the verifier contract.
      */
     constructor(uint8 _levels, uint256 _denomination, address _mimc, address _verifier) {
         if (_levels > 10) {
@@ -166,6 +166,14 @@ contract Tornado is ReentrancyGuard {
     //////////////////////
     // External Functions
     //////////////////////
+    /**
+     * @notice Function deposits funds into the contract, adds the associated commitment to the
+     *         next available Merkle tree leaf node, and updates the state of the Merkle tree accordingly.
+     * @dev Reverts if there are no more available leaf nodes, the commitment is already associated with
+     *      a deposit, or an incorrect amount of ether is sent.
+     * @dev Emits Deposit event.
+     * @param _commitment The Pederson commitment associated with this deposit.
+     */
     function deposit(bytes32 _commitment) external payable {
         if (nextDepositIndex >= 2 ** levels) {
             revert Tornado__MaxDepositsReached();
@@ -180,10 +188,13 @@ contract Tornado is ReentrancyGuard {
         uint16 currentIndex = nextDepositIndex;
         bytes32 left;
         bytes32 right;
-        uint8[] memory hashDirections = new uint8[](levels); // index of the last hash element in calculation of next hash element
+        /* hashDirections: index of the last hash element in the calculation of next hash element 
+           0 -> left input, 1 -> right input */
+        uint8[] memory hashDirections = new uint8[](levels);
         bytes32[] memory newTreePath = new bytes32[](levels + 1);
         newTreePath[0] = _commitment;
 
+        // Calculate new path form the commitment to the Merkle root
         for (uint8 i = 0; i < levels; i++) {
             if (currentIndex % 2 == 0) {
                 hashDirections[i] = 0;
@@ -199,12 +210,28 @@ contract Tornado is ReentrancyGuard {
         }
         lastTreePath = newTreePath;
 
+        // Update array of commitments used and Merkle tree deposit index
         commitmentsUsed[_commitment] = true;
-        lastThirtyRoots[nextDepositIndex % NUM_OF_PREV_ROOTS] = lastTreePath[levels];
         nextDepositIndex++;
+
+        // Update Merkle root
+        lastThirtyRoots[nextDepositIndex % NUM_OF_PREV_ROOTS] = lastTreePath[levels];
         emit Deposit(_commitment, lastTreePath, hashDirections);
     }
 
+    /**
+     * @notice Function evalutes a proof that the user knows a secret and a nullifier that are associated with
+     *         a commitment used to deposit ether into the contract. If the proof is valid and has not been used
+     *         before, the function sends the user the ether associated with that commitment.
+     * @dev The proof proves that the commitment is currently a leaf node in the Merkle tree.
+     * @dev Reverts if the proof is invalid, the proof isn't using the current Merkle root, or the proof has
+     *      has already been used.
+     * @param _pA The first part of the zk-SNARK proof, one elliptic curve point.
+     * @param _pB The second part of the zk-SNARK proof, two elliptic curve points.
+     * @param _pC The third part of the zk-SNARK proof, one elliptic curve point.
+     * @param _root The Merkle root used in the proof.
+     * @param _nullifierHash The hash of the nullifier used in the proof.
+     */
     function withdraw(
         uint256[2] calldata _pA,
         uint256[2][2] calldata _pB,
@@ -238,7 +265,14 @@ contract Tornado is ReentrancyGuard {
     // View & Pure Functions
     /////////////////////////
     /**
-     * @dev Hashes 2 tree nodes
+     * @dev Function is essentially the MiMC Sponge Hash function used for hashing
+     *         Merkle tree nodes
+     * @dev This contract uses the MiMCSponge hasher contract made by the Tornado Cash team, so this function
+     *      was taken directly from their MerkleTreeWithHistory.sol contract.
+     * @param _left Left hash input node.
+     * @param _right Right hash input node.
+     * @return R The output of the MiMC hash function. The Merkle tree node of the next level or if it is the
+     * final level, the Merkle root.
      */
     function hashLeftRight(bytes32 _left, bytes32 _right) private view returns (bytes32) {
         if (uint256(_left) > FIELD_MODULUS) {
@@ -256,6 +290,13 @@ contract Tornado is ReentrancyGuard {
         return bytes32(R);
     }
 
+    /**
+     * @dev Function checks if the given root is one of the previous 30 Merkle roots. This is necessary
+     *      because the withdrawal process requires the prover to retrieve data from emitted events, create
+     *      the withdrawal proof, and submit the proof for verification. During this time, it is possible
+     *      for other users to submit deposits, which would change the current Merkle root. Allowing proofs
+     *      against the previous 30 roots helps prevent valid proofs from getting rejected.
+     */
     function validRoot(bytes32 _root) internal view returns (bool) {
         for (uint256 i = 0; i < lastThirtyRoots.length; i++) {
             if (lastThirtyRoots[i] == _root) {
@@ -265,6 +306,7 @@ contract Tornado is ReentrancyGuard {
         return false;
     }
 
+    // Getter Functions
     function getNextDepositIndex() public view returns (uint16) {
         return nextDepositIndex;
     }

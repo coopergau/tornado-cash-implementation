@@ -43,7 +43,9 @@ contract VerifierTest is Test {
         (, verifier) = deployer.run(LEVELS, DENOMINATION);
     }
 
-    // Valid Proof Test ///////////////////////////////////////////////////////
+    //////////////////////////
+    // Valid Proof Tests
+    //////////////////////////
     function testValidProofReturnsTrue() public view {
         // Arrange
         uint256[3] memory pubInputs = [validRoot, validNullHash, validUserAddress];
@@ -55,7 +57,9 @@ contract VerifierTest is Test {
         assert(validProof);
     }
 
-    // Invalid Proof Tests ////////////////////////////////////////////////////
+    //////////////////////////
+    // Invalid Proof Tests
+    //////////////////////////
     function testWrongRootReturnsFalseProof() public view {
         // Arrange
         uint256 wrongRoot = validRoot + 1;

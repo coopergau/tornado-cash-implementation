@@ -63,7 +63,9 @@ contract TornadoTest is Test {
         vm.deal(user, STARTING_USER_BALANCE);
     }
 
-    // Constructor //////////////////////////////////////////////////////
+    //////////////////////////
+    // Constructor Tests
+    //////////////////////////
 
     function testConstructorRevertsIfTooManyLevels() public {
         // Arrange
@@ -76,7 +78,9 @@ contract TornadoTest is Test {
         (tornado,) = deployer.run(tooManyLevels, DENOMINATION);
     }
 
-    // Deposit //////////////////////////////////////////////////////////
+    //////////////////////////
+    // Deposit Function Tests
+    //////////////////////////
 
     function testDepositRevertsIfLimitReached() public {
         // Arrange
@@ -109,10 +113,8 @@ contract TornadoTest is Test {
         tornado.deposit{value: DENOMINATION / 2}(DEFAULT_COMMITMENT);
     }
 
-    // Function tests that the following are updated correctly:
-    // depositIndex
-    // commitmentUsed
-    // Merkle root storage
+    /* Function tests that the next deposit index, array of used commitments, 
+       and current Merkle root are updated correctly */
     function testDepositUpdatesStateCorrectly() public {
         // Arrange
         uint16 initialDepositIndex = tornado.getNextDepositIndex();
@@ -181,7 +183,9 @@ contract TornadoTest is Test {
         tornado.deposit{value: DENOMINATION}(DEFAULT_COMMITMENT);
     }
 
-    // Withdraw /////////////////////////////////////////////////////////
+    //////////////////////////
+    // Withdraw Function Tests
+    //////////////////////////
 
     function testWithdrawRevertsIfRootIsNotCurrent() public {
         // Arrange
@@ -267,9 +271,9 @@ contract TornadoTest is Test {
         vm.stopPrank();
     }
 
-    // Add more tests for when a value is deposited in the middle of the tree, not the first deposit
-
-    // Private Function Tests ///////////////////////////////////////
+    //////////////////////////
+    // Private Function Tests
+    //////////////////////////
     // Currently the suggested method is to change the functions to public, test them, and then change back to private
 
     // Test passes
