@@ -70,10 +70,9 @@ contract TornadoTest is Test {
     function testConstructorRevertsIfTooManyLevels() public {
         // Arrange
         uint8 tooManyLevels = 11;
-        // Named secondTornado because "tornado" is still declared in setUp() function
-        //Tornado public secondTornado;
-
         DeployTornado deployer = new DeployTornado();
+
+        // Act & Assert
         vm.expectRevert(Tornado.Tornado__TreeLevelsExceedsTen.selector);
         (tornado,) = deployer.run(tooManyLevels, DENOMINATION);
     }

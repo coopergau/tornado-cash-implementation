@@ -210,12 +210,12 @@ contract Tornado is ReentrancyGuard {
         }
         lastTreePath = newTreePath;
 
+        // Update Merkle root
+        lastThirtyRoots[nextDepositIndex % NUM_OF_PREV_ROOTS] = lastTreePath[levels];
+
         // Update array of commitments used and Merkle tree deposit index
         commitmentsUsed[_commitment] = true;
         nextDepositIndex++;
-
-        // Update Merkle root
-        lastThirtyRoots[nextDepositIndex % NUM_OF_PREV_ROOTS] = lastTreePath[levels];
         emit Deposit(_commitment, lastTreePath, hashDirections);
     }
 
