@@ -43,5 +43,6 @@ jobs:
         env:
           ETH_RPC_URL: ${{ secrets.ETH_RPC_URL }}
         run: |
-          forge test --fork-url $ETH_RPC_URL -vvv
+          cd backend/contracts
+          forge test --fork-url $ETH_RPC_URL
         id: test
