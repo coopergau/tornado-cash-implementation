@@ -7,3 +7,6 @@ This project is based on the private transaction protocol outlined in the [Torna
 ## Notes on things to mention
 
 zkREPL was used to get alot of the values used for Verifier.sol testing
+
+sort out the package.json stuff
+accidentelly added react stuff in outer package.json

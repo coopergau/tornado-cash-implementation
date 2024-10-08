@@ -33,12 +33,9 @@ contract VerifierTest is Test {
         0x2679278d6c3a5fe59d02beb59d6456881ac37420200cb7f2c5361281cdacd4da
     ];
     // Public inputs
-    uint256 public validRoot =
-        0x2e1f71794ec5b81b8d9cfca569c00e42d8ec0d3adee4e0888f6b839c4a9d874f;
-    uint256 public validNullHash =
-        0x0d27f3b3ac9366f25360e532ea7639b549145aa13b74ee7bf7c3eb34e904c5f4;
-    uint256 public validUserAddress =
-        0x0000000000000000000000000000000000000000000000000000000000000001;
+    uint256 public validRoot = 0x2e1f71794ec5b81b8d9cfca569c00e42d8ec0d3adee4e0888f6b839c4a9d874f;
+    uint256 public validNullHash = 0x0d27f3b3ac9366f25360e532ea7639b549145aa13b74ee7bf7c3eb34e904c5f4;
+    uint256 public validUserAddress = 0x0000000000000000000000000000000000000000000000000000000000000001;
 
     function setUp() external {
         DeployTornado deployer = new DeployTornado();
@@ -50,19 +47,10 @@ contract VerifierTest is Test {
     ///////////////////////
     function testValidProofReturnsTrue() public view {
         // Arrange
-        uint256[3] memory pubInputs = [
-            validRoot,
-            validNullHash,
-            validUserAddress
-        ];
+        uint256[3] memory pubInputs = [validRoot, validNullHash, validUserAddress];
 
         // Act
-        bool validProof = verifier.verifyProof(
-            validA,
-            validB,
-            validC,
-            pubInputs
-        );
+        bool validProof = verifier.verifyProof(validA, validB, validC, pubInputs);
 
         // Assert
         assert(validProof);
@@ -74,19 +62,10 @@ contract VerifierTest is Test {
     function testWrongRootReturnsFalseProof() public view {
         // Arrange
         uint256 wrongRoot = validRoot + 1;
-        uint256[3] memory pubInputs = [
-            wrongRoot,
-            validNullHash,
-            validUserAddress
-        ];
+        uint256[3] memory pubInputs = [wrongRoot, validNullHash, validUserAddress];
 
         // Act
-        bool validProof = verifier.verifyProof(
-            validA,
-            validB,
-            validC,
-            pubInputs
-        );
+        bool validProof = verifier.verifyProof(validA, validB, validC, pubInputs);
 
         // Assert
         assert(!validProof);
@@ -95,19 +74,10 @@ contract VerifierTest is Test {
     function testWrongNullHashReturnsFalseProof() public view {
         // Arrange
         uint256 wrongNullHash = validNullHash + 1;
-        uint256[3] memory pubInputs = [
-            validRoot,
-            wrongNullHash,
-            validUserAddress
-        ];
+        uint256[3] memory pubInputs = [validRoot, wrongNullHash, validUserAddress];
 
         // Act
-        bool validProof = verifier.verifyProof(
-            validA,
-            validB,
-            validC,
-            pubInputs
-        );
+        bool validProof = verifier.verifyProof(validA, validB, validC, pubInputs);
 
         // Assert
         assert(!validProof);
@@ -119,12 +89,7 @@ contract VerifierTest is Test {
         uint256[3] memory pubInputs = [validRoot, validNullHash, wrongAddress];
 
         // Act
-        bool validProof = verifier.verifyProof(
-            validA,
-            validB,
-            validC,
-            pubInputs
-        );
+        bool validProof = verifier.verifyProof(validA, validB, validC, pubInputs);
 
         // Assert
         assert(!validProof);
@@ -132,20 +97,11 @@ contract VerifierTest is Test {
 
     function testWrongA0ReturnsFalseProof() public view {
         // Arrange
-        uint256[3] memory pubInputs = [
-            validRoot,
-            validNullHash,
-            validUserAddress
-        ];
+        uint256[3] memory pubInputs = [validRoot, validNullHash, validUserAddress];
         uint256[2] memory wrong_a = [validA[0] + 1, validA[1]];
 
         // Act
-        bool validProof = verifier.verifyProof(
-            wrong_a,
-            validB,
-            validC,
-            pubInputs
-        );
+        bool validProof = verifier.verifyProof(wrong_a, validB, validC, pubInputs);
 
         // Assert
         assert(!validProof);
@@ -153,20 +109,11 @@ contract VerifierTest is Test {
 
     function testWrongA1ReturnsFalseProof() public view {
         // Arrange
-        uint256[3] memory pubInputs = [
-            validRoot,
-            validNullHash,
-            validUserAddress
-        ];
+        uint256[3] memory pubInputs = [validRoot, validNullHash, validUserAddress];
         uint256[2] memory wrong_a = [validA[0], validA[1] + 1];
 
         // Act
-        bool validProof = verifier.verifyProof(
-            wrong_a,
-            validB,
-            validC,
-            pubInputs
-        );
+        bool validProof = verifier.verifyProof(wrong_a, validB, validC, pubInputs);
 
         // Assert
         assert(!validProof);
@@ -174,23 +121,11 @@ contract VerifierTest is Test {
 
     function testWrongB00ReturnsFalseProof() public view {
         // Arrange
-        uint256[3] memory pubInputs = [
-            validRoot,
-            validNullHash,
-            validUserAddress
-        ];
-        uint256[2][2] memory wrong_b = [
-            [validB[0][0] + 1, validB[0][1]],
-            [validB[1][0], validB[1][1]]
-        ];
+        uint256[3] memory pubInputs = [validRoot, validNullHash, validUserAddress];
+        uint256[2][2] memory wrong_b = [[validB[0][0] + 1, validB[0][1]], [validB[1][0], validB[1][1]]];
 
         // Act
-        bool validProof = verifier.verifyProof(
-            validA,
-            wrong_b,
-            validC,
-            pubInputs
-        );
+        bool validProof = verifier.verifyProof(validA, wrong_b, validC, pubInputs);
 
         // Assert
         assert(!validProof);
@@ -198,23 +133,11 @@ contract VerifierTest is Test {
 
     function testWrongB01ReturnsFalseProof() public view {
         // Arrange
-        uint256[3] memory pubInputs = [
-            validRoot,
-            validNullHash,
-            validUserAddress
-        ];
-        uint256[2][2] memory wrong_b = [
-            [validB[0][0], validB[0][1] + 1],
-            [validB[1][0], validB[1][1]]
-        ];
+        uint256[3] memory pubInputs = [validRoot, validNullHash, validUserAddress];
+        uint256[2][2] memory wrong_b = [[validB[0][0], validB[0][1] + 1], [validB[1][0], validB[1][1]]];
 
         // Act
-        bool validProof = verifier.verifyProof(
-            validA,
-            wrong_b,
-            validC,
-            pubInputs
-        );
+        bool validProof = verifier.verifyProof(validA, wrong_b, validC, pubInputs);
 
         // Assert
         assert(!validProof);
@@ -222,23 +145,11 @@ contract VerifierTest is Test {
 
     function testWrongB10ReturnsFalseProof() public view {
         // Arrange
-        uint256[3] memory pubInputs = [
-            validRoot,
-            validNullHash,
-            validUserAddress
-        ];
-        uint256[2][2] memory wrong_b = [
-            [validB[0][0], validB[0][1]],
-            [validB[1][0] + 1, validB[1][1]]
-        ];
+        uint256[3] memory pubInputs = [validRoot, validNullHash, validUserAddress];
+        uint256[2][2] memory wrong_b = [[validB[0][0], validB[0][1]], [validB[1][0] + 1, validB[1][1]]];
 
         // Act
-        bool validProof = verifier.verifyProof(
-            validA,
-            wrong_b,
-            validC,
-            pubInputs
-        );
+        bool validProof = verifier.verifyProof(validA, wrong_b, validC, pubInputs);
 
         // Assert
         assert(!validProof);
@@ -246,23 +157,11 @@ contract VerifierTest is Test {
 
     function testWrongB11ReturnsFalseProof() public view {
         // Arrange
-        uint256[3] memory pubInputs = [
-            validRoot,
-            validNullHash,
-            validUserAddress
-        ];
-        uint256[2][2] memory wrong_b = [
-            [validB[0][0], validB[0][1]],
-            [validB[1][0], validB[1][1] + 1]
-        ];
+        uint256[3] memory pubInputs = [validRoot, validNullHash, validUserAddress];
+        uint256[2][2] memory wrong_b = [[validB[0][0], validB[0][1]], [validB[1][0], validB[1][1] + 1]];
 
         // Act
-        bool validProof = verifier.verifyProof(
-            validA,
-            wrong_b,
-            validC,
-            pubInputs
-        );
+        bool validProof = verifier.verifyProof(validA, wrong_b, validC, pubInputs);
 
         // Assert
         assert(!validProof);
@@ -270,20 +169,11 @@ contract VerifierTest is Test {
 
     function testWrongC0ReturnsFalseProof() public view {
         // Arrange
-        uint256[3] memory pubInputs = [
-            validRoot,
-            validNullHash,
-            validUserAddress
-        ];
+        uint256[3] memory pubInputs = [validRoot, validNullHash, validUserAddress];
         uint256[2] memory wrong_c = [validC[0] + 1, validC[1]];
 
         // Act
-        bool validProof = verifier.verifyProof(
-            validA,
-            validB,
-            wrong_c,
-            pubInputs
-        );
+        bool validProof = verifier.verifyProof(validA, validB, wrong_c, pubInputs);
 
         // Assert
         assert(!validProof);
@@ -291,20 +181,11 @@ contract VerifierTest is Test {
 
     function testWrongC1ReturnsFalseProof() public view {
         // Arrange
-        uint256[3] memory pubInputs = [
-            validRoot,
-            validNullHash,
-            validUserAddress
-        ];
+        uint256[3] memory pubInputs = [validRoot, validNullHash, validUserAddress];
         uint256[2] memory wrong_c = [validC[0], validC[1] + 1];
 
         // Act
-        bool validProof = verifier.verifyProof(
-            validA,
-            validB,
-            wrong_c,
-            pubInputs
-        );
+        bool validProof = verifier.verifyProof(validA, validB, wrong_c, pubInputs);
 
         // Assert
         assert(!validProof);
