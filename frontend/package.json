@@ -10,10 +10,14 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@iden3/binfileutils": "^0.0.12",
     "ethers": "^6.13.3",
+    "fastfile": "^0.0.20",
+    "ffjavascript": "^0.3.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
-    "react-router-dom": "^6.26.2"
+    "react-router-dom": "^6.26.2",
+    "snarkjs": "^0.7.4"
   },
   "devDependencies": {
     "@eslint/js": "^9.11.1",
