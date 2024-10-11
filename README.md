@@ -7,3 +7,7 @@ This project is based on the private transaction protocol outlined in the [Torna
 ## Notes on things to mention
 
 zkREPL was used to get alot of the values used for Verifier.sol testing
+
+To test deploying on anvil run:
+anvil --fork-url <ETH mainnet fork url>
+make anvil_deploy PRIVATE_KEY=<anvil private key>

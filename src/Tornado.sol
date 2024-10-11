@@ -34,7 +34,10 @@ interface IMiMC {
      * @return xL The left pat of the resulting hash.
      * @return xR The right pat of the resulting hash.
      */
-    function MiMCSponge(uint256 in_xL, uint256 in_xR) external pure returns (uint256 xL, uint256 xR);
+    function MiMCSponge(
+        uint256 in_xL,
+        uint256 in_xR
+    ) external pure returns (uint256 xL, uint256 xR);
 }
 
 interface IVerifier {
@@ -109,16 +112,36 @@ contract Tornado is ReentrancyGuard {
 
     // Randomly generated Merkle tree initial node values by level
     bytes32[10] internal initialNodeValues = [
-        bytes32(0x0de70e2c8239509d2b8be8701de9657180da637f09f4063046f5f3d90b01b5d9),
-        bytes32(0x211436a028b38dcd6f02492ea42254a7fe34a03fef3baaddb357156ad84480b1),
-        bytes32(0x023e3b895367a1e60223c601d6823a42d78d199e7174c5eb3e4c29cabf7c4dd3),
-        bytes32(0x03417128982f9a3eecf227fb511ed46edae71991d68861548b1c081cf35762e3),
-        bytes32(0x122caecc4e02fcf1d4867fc71beca700706767c4337a90fdef096ca2a85cd551),
-        bytes32(0x2ecc7cab28d34610c27369cc8688581c7ddd283d62e1558121d2ae9fb06eff59),
-        bytes32(0x2f5b206c3d94be12e74877e7c2681abb29d41715083fd69a5ef410dc747bf7f0),
-        bytes32(0x0047482acf7237ec934584082a5bebcbfec5fb3a47b202de12b8e1ce9f3a38c4),
-        bytes32(0x24bf01b2dca343cd72e4d27b4e548d84799b81096aa894c7e825780ff07ea24d),
-        bytes32(0x27600a82f00c73b9b35841dbbf3c91362c7127c4016ab9deef248a9da45ba6d0)
+        bytes32(
+            0x0de70e2c8239509d2b8be8701de9657180da637f09f4063046f5f3d90b01b5d9
+        ),
+        bytes32(
+            0x211436a028b38dcd6f02492ea42254a7fe34a03fef3baaddb357156ad84480b1
+        ),
+        bytes32(
+            0x023e3b895367a1e60223c601d6823a42d78d199e7174c5eb3e4c29cabf7c4dd3
+        ),
+        bytes32(
+            0x03417128982f9a3eecf227fb511ed46edae71991d68861548b1c081cf35762e3
+        ),
+        bytes32(
+            0x122caecc4e02fcf1d4867fc71beca700706767c4337a90fdef096ca2a85cd551
+        ),
+        bytes32(
+            0x2ecc7cab28d34610c27369cc8688581c7ddd283d62e1558121d2ae9fb06eff59
+        ),
+        bytes32(
+            0x2f5b206c3d94be12e74877e7c2681abb29d41715083fd69a5ef410dc747bf7f0
+        ),
+        bytes32(
+            0x0047482acf7237ec934584082a5bebcbfec5fb3a47b202de12b8e1ce9f3a38c4
+        ),
+        bytes32(
+            0x24bf01b2dca343cd72e4d27b4e548d84799b81096aa894c7e825780ff07ea24d
+        ),
+        bytes32(
+            0x27600a82f00c73b9b35841dbbf3c91362c7127c4016ab9deef248a9da45ba6d0
+        )
     ];
 
     //////////////////////
@@ -136,7 +159,11 @@ contract Tornado is ReentrancyGuard {
      *                       while a value of 1 indicates it is the right input. (e.g. The
      *                       hashDirections array for the first deposit will be all zeros)
      */
-    event Deposit(bytes32 commitment, bytes32[] treePath, uint8[] hashDirections);
+    event Deposit(
+        bytes32 commitment,
+        bytes32[] treePath,
+        uint8[] hashDirections
+    );
     /**
      * @notice When a user withdraws funds, this event emits the hash of the nullifier
      *         that is used to prevent double spending of the same commitment.
@@ -149,11 +176,16 @@ contract Tornado is ReentrancyGuard {
     //////////////////////
     /**
      * @param _levels The levels of the Merkle tree, not including the root.
-     * @param _denomination The amount of ether that users can deposit or withdraw per transaction.
+     * @param _denomination The amount of wei that users can deposit or withdraw per transaction.
      * @param _mimc The address of the MiMC contract.
      * @param _verifier The address of the verifier contract.
      */
-    constructor(uint8 _levels, uint256 _denomination, address _mimc, address _verifier) {
+    constructor(
+        uint8 _levels,
+        uint256 _denomination,
+        address _mimc,
+        address _verifier
+    ) {
         if (_levels > 10) {
             revert Tornado__TreeLevelsExceedsTen();
         }
@@ -211,7 +243,9 @@ contract Tornado is ReentrancyGuard {
         lastTreePath = newTreePath;
 
         // Update Merkle root
-        lastThirtyRoots[nextDepositIndex % NUM_OF_PREV_ROOTS] = lastTreePath[levels];
+        lastThirtyRoots[nextDepositIndex % NUM_OF_PREV_ROOTS] = lastTreePath[
+            levels
+        ];
 
         // Update array of commitments used and Merkle tree deposit index
         commitmentsUsed[_commitment] = true;
@@ -246,14 +280,23 @@ contract Tornado is ReentrancyGuard {
             revert Tornado__NullifierAlreadyUsed();
         }
         if (
-            !verifier.verifyProof(_pA, _pB, _pC, [uint256(_root), uint256(_nullifierHash), uint256(uint160(msg.sender))])
+            !verifier.verifyProof(
+                _pA,
+                _pB,
+                _pC,
+                [
+                    uint256(_root),
+                    uint256(_nullifierHash),
+                    uint256(uint160(msg.sender))
+                ]
+            )
         ) {
             revert Tornado__InvalidWithdrawProof();
         }
 
         nullifierHashesUsed[_nullifierHash] = true;
 
-        (bool withdrawSuccess,) = msg.sender.call{value: denomination}("");
+        (bool withdrawSuccess, ) = msg.sender.call{value: denomination}("");
         if (!withdrawSuccess) {
             revert Tornado__WithdrawFailed();
         }
@@ -274,7 +317,10 @@ contract Tornado is ReentrancyGuard {
      * @return R The output of the MiMC hash function. The Merkle tree node of the next level or if it is the
      * final level, the Merkle root.
      */
-    function hashLeftRight(bytes32 _left, bytes32 _right) private view returns (bytes32) {
+    function hashLeftRight(
+        bytes32 _left,
+        bytes32 _right
+    ) private view returns (bytes32) {
         if (uint256(_left) > FIELD_MODULUS) {
             revert Tornado__HashElementNotInField();
         }
@@ -319,7 +365,11 @@ contract Tornado is ReentrancyGuard {
         return NUM_OF_PREV_ROOTS;
     }
 
-    function getLastThirtyRoots() public view returns (bytes32[NUM_OF_PREV_ROOTS] memory) {
+    function getLastThirtyRoots()
+        public
+        view
+        returns (bytes32[NUM_OF_PREV_ROOTS] memory)
+    {
         return lastThirtyRoots;
     }
 
